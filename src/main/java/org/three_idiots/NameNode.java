@@ -5,4 +5,3 @@ class NameNode {
         System.out.println("starting NameNode ...");
     }
 }
-

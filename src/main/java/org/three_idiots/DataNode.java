@@ -5,4 +5,3 @@ public class DataNode {
         System.out.println("starting DataNode ...");
     }
 }
-
