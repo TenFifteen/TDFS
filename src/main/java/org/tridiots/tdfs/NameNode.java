@@ -1,4 +1,4 @@
-package org.three_idiots;
+package org.tridiots.tdfs;
 
 class NameNode {
     public static void main(String args[]) {
