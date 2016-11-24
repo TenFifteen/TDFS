@@ -3,13 +3,14 @@ package org.tridiots.tdfs;
 import java.net.InetSocketAddress;
 import org.tridiots.ipc.RPC;
 
-public class DataNode extends Thread {
+public class DataNode implements Runnable {
 
     private DataNodeProtocol namenode;
     private volatile boolean running = true;
 
     public DataNode(String host, int port) {
-        this.namenode = (DataNodeProtocol) RPC.getProxy(DataNodeProtocol.class, new InetSocketAddress(host, port));
+        this.namenode = (DataNodeProtocol) RPC.getProxy(DataNodeProtocol.class, 
+                new InetSocketAddress(host, port));
     }
 
     @Override
@@ -25,11 +26,38 @@ public class DataNode extends Thread {
         }
     }
 
+    public void start() {
+        new Thread(this).start();
+    }
+
+    public synchronized void stop() {
+        this.running = false;
+        notifyAll();
+    }
+
+    public synchronized void join() {
+        try {
+            while (running) {
+                wait();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String args[]) throws InterruptedException {
         System.out.println("starting DataNode ...");
-
         DataNode datanode = new DataNode("localhost", NameNode.PORT);
         datanode.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                datanode.stop();
+            }
+        });
+
+        System.out.println("DataNode started");
         datanode.join();
     }
 }

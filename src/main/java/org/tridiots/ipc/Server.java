@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class Server extends Thread {
+public class Server implements Runnable {
 
     private static final int THREAD_NUMBER = 4;
 
@@ -48,7 +48,7 @@ public class Server extends Thread {
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         } catch (EOFException e) {
-                            break;
+                            break; // Client closed.
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -58,6 +58,25 @@ public class Server extends Thread {
                 e.printStackTrace();
             }
         }
+    }
+
+    public synchronized void join() {
+        try {
+            while (running) {
+                wait();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void start() {
+        new Thread(this).start();
+    }
+
+    public synchronized void stop() {
+        this.running = false;    
+        notifyAll();
     }
 
     private Object call(Param param) {

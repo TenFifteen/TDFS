@@ -11,17 +11,18 @@ public class NameNode implements DataNodeProtocol {
 
     public NameNode() {
         this.server = RPC.getServer(this, PORT);
-        if (this.server != null) {
-            this.server.start();
-        }
     }
 
     public void join() {
-        try {
-            this.server.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        this.server.join();
+    }
+
+    public void start() {
+        this.server.start();
+    }
+
+    public void stop() {
+        this.server.stop();
     }
 
     @Override
@@ -32,8 +33,17 @@ public class NameNode implements DataNodeProtocol {
 
     public static void main(String args[]) {
         System.out.println("starting NameNode ...");
-        
         NameNode namenode = new NameNode();
+        namenode.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                namenode.stop();
+            }
+        });
+
+        System.out.println("NameNode started");
         namenode.join();
     }
 }
