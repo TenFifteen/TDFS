@@ -16,9 +16,8 @@ public class SocketObjectUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ByteBuffer buffer = ByteBuffer.allocate(DATA_LENGTH);
 
-        byte [] bytes = null;
+        byte[] bytes = null;
         int size = 0;
-
         try {
             while ((size = channel.read(buffer)) > 0) {
                 bytes = new byte[size];
@@ -43,7 +42,7 @@ public class SocketObjectUtil {
     }
 
     public static boolean sendObject(SocketChannel channel, Object obj) {
-        byte [] bytes = SerializableUtil.toBytes(obj);
+        byte[] bytes = SerializableUtil.toBytes(obj);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         try {
             channel.write(buffer);

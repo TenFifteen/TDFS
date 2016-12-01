@@ -8,7 +8,6 @@ import org.tridiots.ipc.Server;
 public class NameNode implements DataNodeProtocol {
     private static final Logger logger = LoggerFactory.getLogger(NameNode.class);
     public static final int PORT = 54321;
-
     private Server server;
 
     public NameNode() {
@@ -29,7 +28,7 @@ public class NameNode implements DataNodeProtocol {
 
     @Override
     public String sendHeartBeat(String sender) {
-        logger.info("get heartbeat from " + sender);
+        logger.info("get heartbeat from {}.", sender);
         return "hello";
     }
 

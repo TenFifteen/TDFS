@@ -1,6 +1,5 @@
 package org.tridiots.ipc;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +11,7 @@ import java.io.ObjectOutputStream;
 
 public class SerializableUtil {
     private static final Logger logger = LoggerFactory.getLogger(SerializableUtil.class);
+
     public static byte[] toBytes(Object object) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = null;

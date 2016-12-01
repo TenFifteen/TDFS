@@ -3,7 +3,7 @@ package org.tridiots.ipc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -22,22 +22,22 @@ public class Server implements Runnable {
     private Object instance;
     private volatile boolean running = true;
 
-    private InetSocketAddress address = null;
-    private ServerSocketChannel accpetChannel = null;
-    private Selector selector = null;
+    private InetSocketAddress address;
+    private ServerSocketChannel accpetChannel;
+    private Selector selector;
 
     public Server(Object instance, int port) throws IOException {
         this.instance = instance;
         this.address = new InetSocketAddress("localhost", port);
 
         this.accpetChannel = ServerSocketChannel.open();
-        this.accpetChannel.configureBlocking(false);
-        this.accpetChannel.socket().bind(address);
+        accpetChannel.configureBlocking(false);
+        accpetChannel.socket().bind(address);
 
         this.selector = Selector.open();
-        this.accpetChannel.register(selector, SelectionKey.OP_ACCEPT);
+        accpetChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-        logger.info("Server start listen to server:" + address.getHostName() + ":" + address.getPort());
+        logger.info("Server start listen to server: {}:{}", address.getHostName(), address.getPort());
     }
 
     private void doAccept(SelectionKey key) throws IOException {
@@ -46,13 +46,13 @@ public class Server implements Runnable {
         channel.configureBlocking(false);
 
         channel.register(selector, SelectionKey.OP_READ);
-        logger.debug("accept a connection from " + channel.socket().getInetAddress());
+        logger.debug("accept a connection from {}.", channel.socket().getInetAddress());
     }
 
     private void doRead(SelectionKey key) throws IOException, ClassNotFoundException {
         SocketChannel channel = (SocketChannel) key.channel();
 
-        logger.debug("read from connection from " + channel.socket().getInetAddress().getHostName());
+        logger.debug("read from connection from {}.", channel.socket().getInetAddress().getHostName());
         Param param = (Param)SocketObjectUtil.receiveObject(channel);
 
         if (param == null) {
@@ -74,7 +74,7 @@ public class Server implements Runnable {
         SocketObjectUtil.sendObject(channel, result);
         key.interestOps(SelectionKey.OP_READ);
 
-        logger.debug("write to connection " + channel.socket().getInetAddress().getHostName());
+        logger.debug("write to connection {}.", channel.socket().getInetAddress().getHostName());
     }
 
     private void doProcess(SelectionKey key) throws IOException {
@@ -91,7 +91,7 @@ public class Server implements Runnable {
         while (running) {
             try {
                 if (selector.select() == 0) continue;
-                Iterator<SelectionKey> iter = this.selector.selectedKeys().iterator();
+                Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
                 while (iter.hasNext()) {
                     SelectionKey key  = iter.next();
@@ -105,7 +105,6 @@ public class Server implements Runnable {
                         doWrite(key);
                     }
                 }
-
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             } catch (ClassNotFoundException e) {
@@ -135,7 +134,7 @@ public class Server implements Runnable {
 
     private Object call(Param param) {
         try {
-            Method method = this.instance.getClass()
+            Method method = instance.getClass()
                     .getMethod(param.getMethodName(), param.getParamTypes());
             return method.invoke(instance, param.getParams());
         } catch (NoSuchMethodException e) {

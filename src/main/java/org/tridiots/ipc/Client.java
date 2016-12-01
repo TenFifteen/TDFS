@@ -10,10 +10,10 @@ import java.nio.channels.SocketChannel;
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
     private InetSocketAddress addr;
-    private SocketChannel sendChannel = null;
+    private SocketChannel sendChannel;
 
     public Client(InetSocketAddress addr) {
-            this.addr = addr;
+        this.addr = addr;
     }
 
     public Object call(String methodName, Class<?>[] paramTypes, Object[] params) {
@@ -23,9 +23,9 @@ public class Client {
             this.sendChannel = SocketChannel.open(addr);
             //this.sendChannel.configureBlocking(false);
             SocketObjectUtil.sendObject(sendChannel, param);
-            this.sendChannel.socket().shutdownOutput();
+            sendChannel.socket().shutdownOutput();
             Object result = SocketObjectUtil.receiveObject(sendChannel);
-            this.sendChannel.close();
+            sendChannel.close();
 
             return result;
         } catch (IOException e) {
