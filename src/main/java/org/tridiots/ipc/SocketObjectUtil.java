@@ -28,6 +28,9 @@ public class SocketObjectUtil {
                 buffer.clear();
             }
 
+            // important!! read nothing and we should close the channel
+            // otherwise we will trap into endless loop
+            if (size == -1 && baos.size() == 0) return null;
             bytes = baos.toByteArray();
             Object obj = SerializableUtil.toObject(bytes);
 

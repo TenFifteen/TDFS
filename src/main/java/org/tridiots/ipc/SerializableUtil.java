@@ -33,6 +33,8 @@ public class SerializableUtil {
     }
 
     public static Object toObject(byte[] bytes) {
+        if (bytes == null) return null;
+
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         ObjectInputStream ois = null;
         try {

@@ -37,7 +37,44 @@ public class Server implements Runnable {
         this.selector = Selector.open();
         this.accpetChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-        logger.info("Server start listen to port:" + address.getHostName() + ":" + address.getPort());
+        logger.info("Server start listen to server:" + address.getHostName() + ":" + address.getPort());
+    }
+
+    private void doAccept(SelectionKey key) throws IOException {
+        ServerSocketChannel server = (ServerSocketChannel) key.channel();
+        SocketChannel channel = server.accept();
+        channel.configureBlocking(false);
+
+        channel.register(selector, SelectionKey.OP_READ);
+        logger.debug("accept a connection from " + channel.socket().getInetAddress());
+    }
+
+    private void doRead(SelectionKey key) throws IOException, ClassNotFoundException {
+        SocketChannel channel = (SocketChannel) key.channel();
+
+        logger.debug("read from connection from " + channel.socket().getInetAddress().getHostName());
+        Param param = (Param)SocketObjectUtil.receiveObject(channel);
+
+        if (param == null) {
+            // the channel will always readable if we don't close
+            channel.close();
+            return;
+        }
+        Object result = call(param);
+        key.attach(result);
+
+        key.interestOps(SelectionKey.OP_WRITE);
+    }
+
+    private void doWrite(SelectionKey key) throws IOException, ClassNotFoundException {
+        Object result =  key.attachment();
+        if (result == null) return;
+
+        SocketChannel channel = (SocketChannel) key.channel();
+        SocketObjectUtil.sendObject(channel, result);
+        key.interestOps(SelectionKey.OP_READ);
+
+        logger.debug("write to connection " + channel.socket().getInetAddress().getHostName());
     }
 
     private void doProcess(SelectionKey key) throws IOException {
@@ -60,17 +97,19 @@ public class Server implements Runnable {
                     SelectionKey key  = iter.next();
                     iter.remove();
 
-                    pool.submit(() -> {
-                        try {
-                            doProcess(key);
-                        } catch (IOException e) {
-                            logger.error(e.getMessage(), e);
-                        }
-                    });
+                    if (key.isAcceptable()) {
+                        doAccept(key);
+                    } else if (key.isReadable()) {
+                        doRead(key);
+                    } else if (key.isWritable()) {
+                        doWrite(key);
+                    }
                 }
 
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
         }
     }

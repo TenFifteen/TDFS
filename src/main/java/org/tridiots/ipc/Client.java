@@ -3,7 +3,7 @@ package org.tridiots.ipc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
@@ -21,10 +21,11 @@ public class Client {
 
         try {
             this.sendChannel = SocketChannel.open(addr);
+            //this.sendChannel.configureBlocking(false);
             SocketObjectUtil.sendObject(sendChannel, param);
-            this.sendChannel.shutdownOutput();
+            this.sendChannel.socket().shutdownOutput();
             Object result = SocketObjectUtil.receiveObject(sendChannel);
-            sendChannel.close();
+            this.sendChannel.close();
 
             return result;
         } catch (IOException e) {
