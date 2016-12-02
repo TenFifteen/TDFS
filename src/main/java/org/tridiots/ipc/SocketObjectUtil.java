@@ -1,16 +1,16 @@
 package org.tridiots.ipc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SocketObjectUtil {
     private static final Logger logger = LoggerFactory.getLogger(SocketObjectUtil.class);
-    public static final int DATA_LENGTH = 1024;
+    private static final int DATA_LENGTH = 1024;
 
     public static Object receiveObject(SocketChannel channel) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

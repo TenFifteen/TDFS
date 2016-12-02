@@ -1,13 +1,13 @@
 package org.tridiots.ipc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SerializableUtil {
     private static final Logger logger = LoggerFactory.getLogger(SerializableUtil.class);
@@ -18,8 +18,7 @@ public class SerializableUtil {
         try {
             oos = new ObjectOutputStream(baos);
             oos.writeObject(object);
-            byte[] bytes = baos.toByteArray();
-            return bytes;
+            return baos.toByteArray();
         } catch (IOException ex) {
             logger.error(ex.getMessage(), ex);
             return null;
@@ -39,8 +38,7 @@ public class SerializableUtil {
         ObjectInputStream ois = null;
         try {
             ois = new ObjectInputStream(bais);
-            Object object = ois.readObject();
-            return object;
+            return ois.readObject();
         } catch (IOException ex) {
             logger.error(ex.getMessage(), ex);
             return null;

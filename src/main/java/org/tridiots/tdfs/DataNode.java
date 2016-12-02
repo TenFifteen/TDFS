@@ -20,7 +20,7 @@ public class DataNode implements Runnable {
     public void run() {
         while (running) {
             String result = namenode.sendHeartBeat("I am datanode");
-            logger.info("getting message from namenode: " + result);
+            logger.info("getting message from namenode: {}.", result);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -60,7 +60,7 @@ public class DataNode implements Runnable {
             }
         });
 
-        logger.info("DataNode started");
+        logger.info("DataNode started.");
         datanode.join();
     }
 }

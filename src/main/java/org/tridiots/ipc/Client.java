@@ -1,16 +1,17 @@
 package org.tridiots.ipc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Client {
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
+
     private InetSocketAddress addr;
-    private SocketChannel sendChannel;
+    private SocketChannel clientChannel;
 
     public Client(InetSocketAddress addr) {
         this.addr = addr;
@@ -20,12 +21,12 @@ public class Client {
         Param param = new Param(methodName, paramTypes, params);
 
         try {
-            this.sendChannel = SocketChannel.open(addr);
-            //this.sendChannel.configureBlocking(false);
-            SocketObjectUtil.sendObject(sendChannel, param);
-            sendChannel.socket().shutdownOutput();
-            Object result = SocketObjectUtil.receiveObject(sendChannel);
-            sendChannel.close();
+            this.clientChannel = SocketChannel.open(addr);
+
+            SocketObjectUtil.sendObject(clientChannel, param);
+            clientChannel.socket().shutdownOutput();
+            Object result = SocketObjectUtil.receiveObject(clientChannel);
+            clientChannel.close();
 
             return result;
         } catch (IOException e) {

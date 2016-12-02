@@ -1,8 +1,5 @@
 package org.tridiots.ipc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,19 +9,18 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Server implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
-    private static final int THREAD_NUMBER = 4;
-    private ExecutorService pool = Executors.newFixedThreadPool(THREAD_NUMBER);
-    private Object instance;
-    private volatile boolean running = true;
 
+    private Object instance;
     private InetSocketAddress address;
     private ServerSocketChannel accpetChannel;
     private Selector selector;
+    private volatile boolean running = true;
 
     public Server(Object instance, int port) throws IOException {
         this.instance = instance;
@@ -44,16 +40,15 @@ public class Server implements Runnable {
         ServerSocketChannel server = (ServerSocketChannel) key.channel();
         SocketChannel channel = server.accept();
         channel.configureBlocking(false);
-
         channel.register(selector, SelectionKey.OP_READ);
+
         logger.debug("accept a connection from {}.", channel.socket().getInetAddress());
     }
 
     private void doRead(SelectionKey key) throws IOException, ClassNotFoundException {
         SocketChannel channel = (SocketChannel) key.channel();
-
         logger.debug("read from connection from {}.", channel.socket().getInetAddress().getHostName());
-        Param param = (Param)SocketObjectUtil.receiveObject(channel);
+        Param param = (Param) SocketObjectUtil.receiveObject(channel);
 
         if (param == null) {
             // the channel will always readable if we don't close
@@ -61,8 +56,8 @@ public class Server implements Runnable {
             return;
         }
         Object result = call(param);
-        key.attach(result);
 
+        key.attach(result);
         key.interestOps(SelectionKey.OP_WRITE);
     }
 
@@ -77,22 +72,13 @@ public class Server implements Runnable {
         logger.debug("write to connection {}.", channel.socket().getInetAddress().getHostName());
     }
 
-    private void doProcess(SelectionKey key) throws IOException {
-        ServerSocketChannel server = (ServerSocketChannel) key.channel();
-        SocketChannel channel = server.accept();
-
-        Param param = (Param)SocketObjectUtil.receiveObject(channel);
-        Object result = call(param);
-        SocketObjectUtil.sendObject(channel, result);
-        channel.shutdownOutput(); // otherwise the client will block on channel.read
-    }
     @Override
     public void run() {
         while (running) {
             try {
                 if (selector.select() == 0) continue;
-                Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
+                Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
                 while (iter.hasNext()) {
                     SelectionKey key  = iter.next();
                     iter.remove();
@@ -108,7 +94,7 @@ public class Server implements Runnable {
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage(), e);
             }
         }
     }
@@ -119,7 +105,7 @@ public class Server implements Runnable {
                 wait();
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
     }
 
