@@ -8,6 +8,7 @@ import org.tridiots.ipc.RPC;
 
 public class DataNode implements Runnable {
     private static  final Logger logger = LoggerFactory.getLogger(DataNode.class);
+
     private DataNodeProtocol namenode;
     private volatile boolean running = true;
 

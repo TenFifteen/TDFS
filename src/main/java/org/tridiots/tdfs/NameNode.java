@@ -6,8 +6,9 @@ import org.tridiots.ipc.RPC;
 import org.tridiots.ipc.Server;
 
 public class NameNode implements DataNodeProtocol {
-    private static final Logger logger = LoggerFactory.getLogger(NameNode.class);
     public static final int PORT = 54321;
+
+    private static final Logger logger = LoggerFactory.getLogger(NameNode.class);
     private Server server;
 
     public NameNode() {
