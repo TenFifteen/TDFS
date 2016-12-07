@@ -20,10 +20,7 @@ public class SocketObjectUtil {
         int size = 0;
         try {
             while ((size = channel.read(buffer)) > 0) {
-                bytes = new byte[size];
-                buffer.flip();
-                buffer.get(bytes);
-                baos.write(bytes);
+                baos.write(buffer.array(), 0, size);
                 buffer.clear();
             }
 
