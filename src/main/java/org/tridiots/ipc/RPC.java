@@ -5,7 +5,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 
 public class RPC {
 
@@ -19,7 +18,7 @@ public class RPC {
 
         @Override
         public Object invoke(Object object, Method method, Object[] params) throws Throwable {
-            return this.client.call(method.getName(), method.getParameterTypes(), params);
+            return client.call(method.getName(), method.getParameterTypes(), params);
         }
     }
     

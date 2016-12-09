@@ -1,12 +1,14 @@
 package org.tridiots.tdfs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tridiots.ipc.RPC;
 import org.tridiots.ipc.Server;
 
 public class NameNode implements DataNodeProtocol {
-
     public static final int PORT = 54321;
 
+    private static final Logger logger = LoggerFactory.getLogger(NameNode.class);
     private Server server;
 
     public NameNode() {
@@ -27,12 +29,12 @@ public class NameNode implements DataNodeProtocol {
 
     @Override
     public String sendHeartBeat(String sender) {
-        System.out.println("get heartbeat from " + sender);
+        logger.info("get heartbeat from {}.", sender);
         return "hello";
     }
 
     public static void main(String args[]) {
-        System.out.println("starting NameNode ...");
+        logger.info("starting NameNode ...");
         NameNode namenode = new NameNode();
         namenode.start();
 
@@ -43,7 +45,7 @@ public class NameNode implements DataNodeProtocol {
             }
         });
 
-        System.out.println("NameNode started");
+        logger.info("NameNode started");
         namenode.join();
     }
 }

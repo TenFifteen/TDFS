@@ -1,41 +1,38 @@
 package org.tridiots.ipc;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.InetSocketAddress;
-import java.net.Socket;
+import java.nio.channels.SocketChannel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Client {
+    private static final Logger logger = LoggerFactory.getLogger(Client.class);
 
-    private Socket socket;
-    private ObjectInputStream ois;
-    private ObjectOutputStream oos;
+    private InetSocketAddress addr;
+    private SocketChannel clientChannel;
 
     public Client(InetSocketAddress addr) {
-        try {
-            this.socket = new Socket(addr.getAddress(), addr.getPort());
-            // caution: we must create outputsream before inputstream.
-            // see: https://stackoverflow.com/questions/5658089/java-creating-a-new-objectinputstream-blocks
-            this.oos = new ObjectOutputStream(this.socket.getOutputStream());
-            this.ois = new ObjectInputStream(this.socket.getInputStream());
-        } catch (IOException e) {
-            System.out.println("connection failed");
-            e.printStackTrace();
-        }
+        this.addr = addr;
     }
 
     public Object call(String methodName, Class<?>[] paramTypes, Object[] params) {
         Param param = new Param(methodName, paramTypes, params);
+
         try {
-            oos.writeObject(param);
-            return ois.readObject();
+            this.clientChannel = SocketChannel.open(addr);
+
+            SocketObjectUtil.sendObject(clientChannel, param);
+            clientChannel.socket().shutdownOutput();
+            Object result = SocketObjectUtil.receiveObject(clientChannel);
+            clientChannel.close();
+
+            return result;
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
+
         return null;
     }
 }

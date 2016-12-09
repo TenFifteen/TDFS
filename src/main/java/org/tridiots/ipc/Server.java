@@ -1,61 +1,100 @@
 package org.tridiots.ipc;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Server implements Runnable {
+    private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-    private static final int THREAD_NUMBER = 4;
-
-    private ExecutorService pool = Executors.newFixedThreadPool(THREAD_NUMBER);
     private Object instance;
-    private ServerSocket serverSocket;
+    private InetSocketAddress address;
+    private ServerSocketChannel accpetChannel;
+    private Selector selector;
     private volatile boolean running = true;
 
     public Server(Object instance, int port) throws IOException {
         this.instance = instance;
-        this.serverSocket = new ServerSocket(port);
+        this.address = new InetSocketAddress("localhost", port);
+
+        this.accpetChannel = ServerSocketChannel.open();
+        accpetChannel.configureBlocking(false);
+        accpetChannel.socket().bind(address);
+
+        this.selector = Selector.open();
+        accpetChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        logger.info("Server start listen to server: {}:{}", address.getHostName(), address.getPort());
+    }
+
+    private void doAccept(SelectionKey key) throws IOException {
+        ServerSocketChannel server = (ServerSocketChannel) key.channel();
+        SocketChannel channel = server.accept();
+        channel.configureBlocking(false);
+        channel.register(selector, SelectionKey.OP_READ);
+
+        logger.debug("accept a connection from {}.", channel.socket().getInetAddress());
+    }
+
+    private void doRead(SelectionKey key) throws IOException, ClassNotFoundException {
+        SocketChannel channel = (SocketChannel) key.channel();
+        logger.debug("read from connection from {}.", channel.socket().getInetAddress().getHostName());
+        Param param = (Param) SocketObjectUtil.receiveObject(channel);
+
+        if (param == null) {
+            // the channel will always readable if we don't close
+            channel.close();
+            return;
+        }
+        Object result = call(param);
+
+        key.attach(result);
+        key.interestOps(SelectionKey.OP_WRITE);
+    }
+
+    private void doWrite(SelectionKey key) throws IOException, ClassNotFoundException {
+        Object result =  key.attachment();
+        if (result == null) return;
+
+        SocketChannel channel = (SocketChannel) key.channel();
+        SocketObjectUtil.sendObject(channel, result);
+        key.interestOps(SelectionKey.OP_READ);
+
+        logger.debug("write to connection {}.", channel.socket().getInetAddress().getHostName());
     }
 
     @Override
     public void run() {
         while (running) {
-            Socket socket = null;
             try {
-                socket = serverSocket.accept();
-                System.out.println("get connection from " + socket.getInetAddress().getHostName());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                if (selector.select() == 0) continue;
 
-            try {
-                final ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                final ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-                pool.submit(() -> {
-                    while (running) {
-                        try {
-                            Param param = (Param)ois.readObject();
-                            Object result = call(param);
-                            oos.writeObject(result);
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                        } catch (EOFException e) {
-                            break; // Client closed.
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+                while (iter.hasNext()) {
+                    SelectionKey key  = iter.next();
+                    iter.remove();
+
+                    if (key.isAcceptable()) {
+                        doAccept(key);
+                    } else if (key.isReadable()) {
+                        doRead(key);
+                    } else if (key.isWritable()) {
+                        doWrite(key);
                     }
-                });
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage(), e);
+            } catch (ClassNotFoundException e) {
+                logger.error(e.getMessage(), e);
             }
         }
     }
@@ -66,7 +105,7 @@ public class Server implements Runnable {
                 wait();
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -81,15 +120,15 @@ public class Server implements Runnable {
 
     private Object call(Param param) {
         try {
-            Method method = this.instance.getClass()
+            Method method = instance.getClass()
                     .getMethod(param.getMethodName(), param.getParamTypes());
             return method.invoke(instance, param.getParams());
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         } catch (InvocationTargetException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
         return null;
     }
